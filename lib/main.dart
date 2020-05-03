@@ -1,54 +1,81 @@
 import "package:flutter/material.dart";
-import "package:flutter/services.dart";
-import "package:file_picker/file_picker.dart";
 
-String file_path;
+import "listing.dart";
 
 void main() => runApp(Butterfree());
 
 class Butterfree extends StatelessWidget {
-    @override
-    Widget build(BuildContext context) {
-        return MaterialApp(
-            title: "Butterfree",
-            theme: ThemeData(primarySwatch: Colors.pink),
-            home: ButterfreeHome(),
-        );
-    }
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: "Butterfree",
+      theme: ThemeData(primarySwatch: Colors.pink),
+      home: ButterfreeHome(),
+    );
+  }
 }
 
-class ButterfreeHome extends StatelessWidget {
-    @override
-    Widget build(BuildContext context) {
-        return Scaffold (
-            body: Center(
-                child: new FPSelector(),
-            ),
-        );
-    }
+class ButterfreeHome extends StatefulWidget {
+  @override
+  _ButterfreeHomeState createState() => _ButterfreeHomeState();
 }
 
-class FPSelector extends StatefulWidget {
-    @override
-    _FPSelectorState createState() => _FPSelectorState();
+class _ButterfreeHomeState extends State<ButterfreeHome> {
+  bool _onList = true;
+
+  void swapScreenCallback() async {
+    await setState(() => _onList = !_onList);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: new ButterfreeAppBar(),
+      // TODO null will be the other view
+      body: _onList ? new UploadedListing() : null,
+      floatingActionButton: new ScreenFloater(swapScreenCallback),
+    );
+  }
 }
 
-class _FPSelectorState extends State<FPSelector> {
-    String path;
+class ButterfreeAppBar extends StatelessWidget implements PreferredSizeWidget {
+  String _title = "Butterfree";
+  double _height = 42;
 
-    void openExplorer() async {
-        String selected;
-        try {
-            selected = await FilePicker.getFilePath();
-        } on PlatformException catch (_) { }
-        setState(() => this.path = selected);
-    }
+  @override
+  Size get preferredSize => Size.fromHeight(_height);
 
-    @override
-    Widget build(BuildContext context) {
-        return RaisedButton(
-            child: Text(this.path ?? "no file"),
-            onPressed: this.openExplorer,
-        );
-    }
+  @override
+  AppBar build(BuildContext context) {
+    return AppBar(
+      title: Text(_title),
+    );
+  }
+}
+
+class ScreenFloater extends StatefulWidget {
+  Function() swapScreenCallback;
+
+  ScreenFloater(this.swapScreenCallback);
+
+  @override
+  _ScreenFloaterState createState() => _ScreenFloaterState();
+}
+
+class _ScreenFloaterState extends State<ScreenFloater> {
+  final List<IconData> screenIcons = <IconData>[Icons.add, Icons.menu];
+  bool _onList = true;
+
+  void swapScreen() async {
+    await widget.swapScreenCallback();
+    await setState(() => _onList = !_onList);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: swapScreen,
+      child: Icon(screenIcons[_onList ? 0 : 1]),
+    );
+  }
 }
