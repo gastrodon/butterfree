@@ -8,10 +8,12 @@ class Butterfree extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Butterfree",
-      theme: ThemeData(primarySwatch: Colors.pink),
-      home: ButterfreeHome(),
-    );
+        title: "Butterfree",
+        theme: ThemeData(primarySwatch: Colors.pink),
+        home: GestureDetector(
+          child: ButterfreeHome(),
+          onTap: FocusScope.of(context).unfocus,
+        ));
   }
 }
 
