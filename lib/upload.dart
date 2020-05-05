@@ -3,18 +3,15 @@ import "package:flutter/services.dart";
 
 import "package:file_picker/file_picker.dart" as file;
 
+import "utility.dart" as util;
+
 class UploadPanel extends StatefulWidget {
   @override
   _UploadPanelState createState() => _UploadPanelState();
 }
 
 class _UploadPanelState extends State<UploadPanel> {
-  final Map<String, String> _textFieldDefaults = {
-    "filename": "",
-    "host": "http://gastrodon.io/file/",
-    "secret": "secret_key",
-  };
-
+  String _filepath;
   Map<String, ButtonConfig> _buttonConfigs = {
     "file": ButtonConfig(
       key: "file",
@@ -23,15 +20,19 @@ class _UploadPanelState extends State<UploadPanel> {
       key: "upload",
     ),
   };
-
-  String _filepath;
-  Map<String, Function()> _buttonHandlers = {};
-  Map<String, String> _buttonLabels = {};
-  Map<String, String> _textFieldValues = {};
-
-  void recieveTextFieldValue(String target, String value) async {
-    _textFieldValues[target] = value;
-  }
+  Map<String, OptionalTextConfig> _optionalTextConfigs = {
+    "filename": OptionalTextConfig(
+      target: "filename",
+    ),
+    "host": OptionalTextConfig(
+      target: "host",
+      defaultValue: "http://gastrodon.io/",
+    ),
+    "secret": OptionalTextConfig(
+      target: "secret",
+      defaultValue: "secret_key",
+    ),
+  };
 
   void recieveFilepath() async {
     String selected;
@@ -56,6 +57,13 @@ class _UploadPanelState extends State<UploadPanel> {
   void uploadFile() async {
     // TODO to be implemented
     print("uploadFile");
+    print(_optionalTextConfigs.values.map((it) => it.value).toList());
+    util.ferrothornUpload(
+      "http://gastrodon.io/file/",
+      "secret_key",
+      "",
+      _filepath,
+    );
   }
 
   _UploadPanelState() {
@@ -88,12 +96,8 @@ class _UploadPanelState extends State<UploadPanel> {
   }
 
   List<Widget> get textFields {
-    return _textFieldDefaults.keys
-        .map((key) => OptionalText(
-              target: key,
-              value: _textFieldDefaults[key],
-              callback: recieveTextFieldValue,
-            ))
+    return _optionalTextConfigs.values
+        .map((value) => value.built)
         .toList(growable: false);
   }
 
@@ -114,12 +118,14 @@ class _UploadPanelState extends State<UploadPanel> {
 class OptionalText extends StatefulWidget {
   String value;
   String target;
-  Function(String, String) callback;
+  Function(String) textChanged;
+  Function(bool) checkboxChanged;
 
   OptionalText({
     @required String this.value,
     @required String this.target,
-    @required Function(String, String) this.callback,
+    @required Function(String) this.textChanged,
+    @required Function(bool) this.checkboxChanged,
   });
 
   @override
@@ -148,13 +154,14 @@ class _OptionalTextState extends State<OptionalText> {
 
     String settable = checked ? _value : widget.value;
     _textController.text = settable;
+
+    await widget.checkboxChanged(checked);
   }
 
-  void textFieldChanged(String value) async {
+  void textChanged(String value) async {
     _value = value;
-    if (widget.callback != null) {
-      await widget.callback(widget.target, value);
-    }
+
+    await widget.textChanged(value);
   }
 
   TextField get textFieldBuild {
@@ -167,7 +174,7 @@ class _OptionalTextState extends State<OptionalText> {
       style: TextStyle(color: _checked ? Colors.black : Colors.grey),
       enabled: _checked,
       controller: _textController,
-      onChanged: textFieldChanged,
+      onChanged: textChanged,
     );
   }
 
@@ -189,6 +196,40 @@ class _OptionalTextState extends State<OptionalText> {
         ],
       ),
     );
+  }
+}
+
+class OptionalTextConfig {
+  String target, defaultValue;
+  String _value = "";
+  bool _enabled = false;
+
+  OptionalTextConfig({
+    @required this.target,
+    this.defaultValue,
+  }) {
+    defaultValue = defaultValue ?? "";
+  }
+
+  OptionalText get built {
+    return OptionalText(
+      target: target,
+      value: defaultValue,
+      textChanged: textChanged,
+      checkboxChanged: checkboxChanged,
+    );
+  }
+
+  void textChanged(String value) async {
+    _value = value;
+  }
+
+  void checkboxChanged(bool checked) async {
+    _enabled = checked;
+  }
+
+  String get value {
+    return _enabled ? _value : defaultValue;
   }
 }
 
