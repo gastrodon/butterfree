@@ -26,11 +26,10 @@ class _UploadPanelState extends State<UploadPanel> {
     ),
     "host": OptionalTextConfig(
       target: "host",
-      defaultValue: "http://gastrodon.io/",
+      defaultValue: "http://gastrodon.io/file/",
     ),
     "secret": OptionalTextConfig(
       target: "secret",
-      defaultValue: "secret_key",
     ),
   };
 
@@ -56,14 +55,18 @@ class _UploadPanelState extends State<UploadPanel> {
 
   void uploadFile() async {
     // TODO to be implemented
-    print("uploadFile");
-    print(_optionalTextConfigs.values.map((it) => it.value).toList());
-    util.ferrothornUpload(
-      "http://gastrodon.io/file/",
-      "secret_key",
-      "",
-      _filepath,
+    List<String> textValues = _optionalTextConfigs.values
+        .map((it) => it.value)
+        .toList(growable: false);
+    print(textValues);
+    var v = await util.ferrothornUpload(
+      filename: textValues[0],
+      url: textValues[1],
+      secret: textValues[2],
+      filepath: _filepath,
     );
+
+    print(await v.stream.bytesToString());
   }
 
   _UploadPanelState() {
@@ -133,7 +136,7 @@ class OptionalText extends StatefulWidget {
 }
 
 class _OptionalTextState extends State<OptionalText> {
-  bool _checked = false;
+  bool _checked;
   String _value = "";
   TextEditingController _textController;
 
@@ -141,6 +144,7 @@ class _OptionalTextState extends State<OptionalText> {
   void initState() {
     _textController = TextEditingController();
     _textController.text = widget.value;
+    _checked = _textController.text.length == 0;
   }
 
   @override
@@ -164,6 +168,15 @@ class _OptionalTextState extends State<OptionalText> {
     await widget.textChanged(value);
   }
 
+  InputDecoration get labelDecoration {
+    return InputDecoration(
+      labelStyle: TextStyle(
+        color: Colors.black.withOpacity(.2),
+      ),
+      hintText: _checked ? "<${widget.target}>" : null,
+    );
+  }
+
   TextField get textFieldBuild {
     //  TODO subclass TextField to accept
     //  an onEnabled callback to request focus when enabled
@@ -175,6 +188,7 @@ class _OptionalTextState extends State<OptionalText> {
       enabled: _checked,
       controller: _textController,
       onChanged: textChanged,
+      decoration: labelDecoration,
     );
   }
 
@@ -188,7 +202,7 @@ class _OptionalTextState extends State<OptionalText> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 30,
+      height: 40,
       child: Row(
         children: <Widget>[
           checkboxBuilt,
