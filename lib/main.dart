@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 
 import "listing.dart";
+import "upload.dart";
 
 void main() => runApp(Butterfree());
 
@@ -33,8 +34,7 @@ class _ButterfreeHomeState extends State<ButterfreeHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: new ButterfreeAppBar(),
-      // TODO null will be the other view
-      body: _onList ? new UploadedListing() : null,
+      body: _onList ? new UploadedListing() : new UploadPanel(),
       floatingActionButton: new ScreenFloater(swapScreenCallback),
     );
   }
