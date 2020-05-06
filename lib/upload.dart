@@ -1,6 +1,8 @@
+import "dart:convert";
+
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
-
+import "package:http/http.dart" as http;
 import "package:file_picker/file_picker.dart" as file;
 
 import "utility.dart" as util;
@@ -11,7 +13,7 @@ class UploadPanel extends StatefulWidget {
 }
 
 class _UploadPanelState extends State<UploadPanel> {
-  String _filepath;
+  String _filepath, _ferrothornError;
   Map<String, ButtonConfig> _buttonConfigs = {
     "file": ButtonConfig(
       key: "file",
@@ -54,19 +56,41 @@ class _UploadPanelState extends State<UploadPanel> {
   }
 
   void uploadFile() async {
-    // TODO to be implemented
     List<String> textValues = _optionalTextConfigs.values
         .map((it) => it.value)
         .toList(growable: false);
-    print(textValues);
-    var v = await util.ferrothornUpload(
-      filename: textValues[0],
-      url: textValues[1],
-      secret: textValues[2],
-      filepath: _filepath,
-    );
 
-    print(await v.stream.bytesToString());
+    await recieveStreamedResponse(
+      await util.ferrothornUpload(
+        filename: textValues[0],
+        url: textValues[1],
+        secret: textValues[2],
+        filepath: _filepath,
+      ),
+    );
+  }
+
+  void recieveStreamedResponse(http.StreamedResponse response) async {
+    Map<String, dynamic> data;
+    try {
+      data = jsonDecode(await response.stream.bytesToString());
+    } on FormatException catch (err) {
+      data = {};
+    }
+
+    Widget display;
+    switch (response.statusCode) {
+      case 200:
+        display = util.ApiDisplay.ok(response.statusCode, data["id"]);
+        break;
+      case 400:
+      case 401:
+        display = util.ApiDisplay.fail(response.statusCode, data["error"]);
+        break;
+      default:
+        display = util.ApiDisplay.invalid(response.statusCode);
+    }
+    Scaffold.of(context).showSnackBar(display);
   }
 
   _UploadPanelState() {
@@ -112,7 +136,7 @@ class _UploadPanelState extends State<UploadPanel> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: buttons,
-        )
+        ),
       ],
     );
   }
